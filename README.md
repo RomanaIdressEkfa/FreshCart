@@ -1,66 +1,77 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# FreshCart
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Online grocery storefront + admin panel, built with Next.js (App Router) and Supabase. This replaces the project's original Laravel implementation (still on `main`); this rewrite lives on the `nextjs-rewrite` branch.
 
-## About Laravel
+## Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Next.js 16** (App Router, TypeScript, Tailwind CSS v4)
+- **Supabase**: Postgres (catalog data + profiles), Auth (email/password), Storage (product/category images)
+- **Vercel** for deployment
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Features
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- Storefront: home page, category listing (paginated), product detail
+- Cart & wishlist: guest-friendly, stored in the browser (`localStorage`) — no account required, matching the original app's session-based cart
+- Checkout: order summary + shipping form (no payment gateway, same scope as the original)
+- Auth: sign up / sign in / profile editing via Supabase Auth
+- Admin panel (`/admin`, restricted to accounts with `profiles.is_admin = true`): full CRUD for categories, sub-categories, sub-sub-categories, brands and products, including image upload to Supabase Storage and cascading category → sub-category → sub-sub-category selects
 
-## Learning Laravel
+## 1. Create a Supabase project
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+1. Go to [supabase.com](https://supabase.com), create a free project.
+2. Open **SQL Editor** → **New query**, paste the contents of [`supabase/schema.sql`](supabase/schema.sql), and run it. This creates all tables, RLS policies, the `images` storage bucket, and the trigger that creates a `profiles` row for every new signup.
+3. Open **Project Settings → API** and copy the **Project URL** and **anon public key**.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## 2. Configure environment variables
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Copy `.env.local.example` to `.env.local` and fill in the values from step 1:
 
-## Laravel Sponsors
+```bash
+cp .env.local.example .env.local
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-public-key
+```
 
-### Premium Partners
+## 3. Run locally
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+```bash
+npm install
+npm run dev
+```
 
-## Contributing
+Open [http://localhost:3000](http://localhost:3000).
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## 4. Become an admin
 
-## Code of Conduct
+1. Sign up once via `/register`.
+2. In the Supabase SQL editor, find your user id:
+   ```sql
+   select id, email from auth.users;
+   ```
+3. Grant yourself admin access:
+   ```sql
+   update profiles set is_admin = true where id = '<your-user-id>';
+   ```
+4. Sign out and back in, then visit `/admin`.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## 5. Deploy to Vercel
 
-## Security Vulnerabilities
+1. Push this branch to GitHub (already done if you're reading this from the repo).
+2. In [Vercel](https://vercel.com/new), import the repo and pick the `nextjs-rewrite` branch (or merge it into `main` first and deploy that).
+3. Framework preset: Next.js (auto-detected).
+4. Add the two environment variables from step 2 (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) in the Vercel project settings.
+5. Deploy.
+6. Back in Supabase, go to **Authentication → URL Configuration** and add your Vercel deployment URL to **Site URL** and **Redirect URLs**, so auth email links and redirects work in production.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Project structure
 
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- `app/` — routes (App Router)
+- `app/admin/` — admin panel, protected by `is_admin`
+- `lib/supabase/` — Supabase client factories (browser + server)
+- `lib/cart-context.tsx`, `lib/wishlist-context.tsx` — localStorage-backed cart/wishlist state
+- `components/` — shared UI
+- `supabase/schema.sql` — database schema, RLS policies, storage bucket setup
+- `proxy.ts` — Next.js proxy (formerly "middleware"): refreshes the Supabase session and guards `/admin`, `/dashboard`, `/profile`
