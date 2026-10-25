@@ -1,78 +1,86 @@
-import Image from "next/image";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { CrudModal, ModalTriggerButton, ModalEditButton } from "@/components/admin/CrudModal";
 import { DeleteButton } from "@/components/admin/DeleteButton";
-import { deleteSubCategory } from "./actions";
+import { SubCategoryFormFields } from "./SubCategoryFormFields";
+import { upsertSubCategory, deleteSubCategory } from "./actions";
+import type { SubCategory } from "@/types/database";
 
-type Row = {
-  id: number;
-  name: string;
-  image: string | null;
-  categories: { name: string } | null;
-};
+type Row = SubCategory & { categories: { name: string } | null };
 
 export default async function SubCategoriesAdminPage() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("sub_categories")
-    .select("id, name, image, categories(name)")
+    .select("*, categories(name)")
     .order("created_at", { ascending: false });
   const subCategories = (data ?? []) as unknown as Row[];
 
   return (
-    <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Sub-categories</h1>
-        <Link
-          href="/admin/sub-categories/new"
-          className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
-        >
-          New sub-category
-        </Link>
-      </div>
+    <div className="container border border-light shadow p-4 rounded">
+      <h3 className="text-primary mb-4 text-center fw-bold">ALL SUB-CATEGORY LIST</h3>
 
-      <div className="mt-6 overflow-x-auto rounded-xl border border-slate-200 bg-white">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 text-slate-500">
-            <tr>
-              <th className="p-3">Image</th>
-              <th className="p-3">Name</th>
-              <th className="p-3">Category</th>
-              <th className="p-3" />
+      <table className="table table-bordered rounded table-sm">
+        <thead>
+          <tr>
+            <th className="bg-dark bg-gradient text-white">ID</th>
+            <th className="bg-dark bg-gradient text-white">NAME</th>
+            <th className="bg-dark bg-gradient text-white">CATEGORY</th>
+            <th className="bg-dark bg-gradient text-white">IMAGE</th>
+            <th className="bg-dark bg-gradient text-white">ACTION</th>
+          </tr>
+        </thead>
+        <tbody>
+          {subCategories.map((item) => (
+            <tr key={item.id}>
+              <td>{item.id}</td>
+              <td>{item.name}</td>
+              <td>{item.categories?.name}</td>
+              <td>
+                {item.image && (
+                  <img src={item.image} alt={item.name} style={{ width: 48, height: 48, objectFit: "cover" }} />
+                )}
+              </td>
+              <td>
+                <div className="d-flex gap-2 align-items-center">
+                  <ModalEditButton target={`edit-subcategory-${item.id}`} />
+                  <DeleteButton action={deleteSubCategory.bind(null, item.id)} />
+                </div>
+              </td>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {subCategories.map((item) => (
-              <tr key={item.id}>
-                <td className="p-3">
-                  {item.image ? (
-                    <Image src={item.image} alt={item.name} width={40} height={40} className="h-10 w-10 rounded-md object-cover" />
-                  ) : (
-                    <div className="h-10 w-10 rounded-md bg-slate-100" />
-                  )}
-                </td>
-                <td className="p-3 font-medium text-slate-800">{item.name}</td>
-                <td className="p-3 text-slate-500">{item.categories?.name}</td>
-                <td className="p-3 text-right">
-                  <div className="flex items-center justify-end gap-3">
-                    <Link href={`/admin/sub-categories/${item.id}/edit`} className="font-medium text-emerald-600 hover:underline">
-                      Edit
-                    </Link>
-                    <DeleteButton action={deleteSubCategory.bind(null, item.id)} />
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {subCategories.length === 0 && (
-              <tr>
-                <td colSpan={4} className="p-6 text-center text-slate-400">
-                  No sub-categories yet.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+          ))}
+          {subCategories.length === 0 && (
+            <tr>
+              <td colSpan={5} className="text-center text-muted">
+                No sub-categories yet.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+
+      <ModalTriggerButton target="create-subcategory" label="Add Sub-category" />
+
+      <CrudModal
+        id="create-subcategory"
+        title="Create New Sub-category"
+        action={upsertSubCategory}
+        submitLabel="Add new Sub-category"
+      >
+        <SubCategoryFormFields />
+      </CrudModal>
+
+      {subCategories.map((item) => (
+        <CrudModal
+          key={item.id}
+          id={`edit-subcategory-${item.id}`}
+          title="Edit Sub-category"
+          action={upsertSubCategory}
+          submitLabel="Save changes"
+        >
+          <input type="hidden" name="id" value={item.id} />
+          <SubCategoryFormFields subCategory={item} />
+        </CrudModal>
+      ))}
     </div>
   );
 }

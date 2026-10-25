@@ -6,6 +6,9 @@ type Category = { id: number; name: string };
 type SubCategory = Category & { category_id: number };
 type SubSubCategory = Category & { category_id: number; sub_category_id: number };
 
+const selectClass =
+  "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5";
+
 export function ProductCategoryFields({
   categories,
   subCategories,
@@ -31,8 +34,8 @@ export function ProductCategoryFields({
 
   return (
     <>
-      <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-        Category
+      <div>
+        <label className="block mb-2 text-sm font-medium text-gray-900">Category</label>
         <select
           name="category_id"
           required
@@ -41,7 +44,7 @@ export function ProductCategoryFields({
             setCategoryId(Number(e.target.value));
             setSubCategoryId("");
           }}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className={selectClass}
         >
           <option value="">Select a category</option>
           {categories.map((category) => (
@@ -50,15 +53,15 @@ export function ProductCategoryFields({
             </option>
           ))}
         </select>
-      </label>
-      <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-        Sub-category (optional)
+      </div>
+      <div>
+        <label className="block mb-2 text-sm font-medium text-gray-900">Sub-category (optional)</label>
         <select
           key={`sub-${categoryId}`}
           name="sub_category_id"
           value={subCategoryId}
           onChange={(e) => setSubCategoryId(e.target.value ? Number(e.target.value) : "")}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className={selectClass}
         >
           <option value="">None</option>
           {filteredSubCategories.map((sub) => (
@@ -67,14 +70,14 @@ export function ProductCategoryFields({
             </option>
           ))}
         </select>
-      </label>
-      <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-        Sub-sub-category (optional)
+      </div>
+      <div>
+        <label className="block mb-2 text-sm font-medium text-gray-900">Sub-sub-category (optional)</label>
         <select
           key={`subsub-${subCategoryId}`}
           name="sub_sub_category_id"
           defaultValue={defaultSubSubCategoryId ?? ""}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className={selectClass}
         >
           <option value="">None</option>
           {filteredSubSubCategories.map((subSub) => (
@@ -83,7 +86,7 @@ export function ProductCategoryFields({
             </option>
           ))}
         </select>
-      </label>
+      </div>
     </>
   );
 }

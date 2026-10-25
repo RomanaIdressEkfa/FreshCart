@@ -10,7 +10,7 @@ export function DeleteButton({ action }: { action: () => Promise<void> }) {
         }
       }}
     >
-      <button type="submit" className="text-sm font-medium text-red-600 hover:underline">
+      <button type="submit" className="btn btn-sm btn-danger">
         Delete
       </button>
     </form>
